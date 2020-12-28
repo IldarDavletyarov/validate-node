@@ -64,13 +64,13 @@
       <div>
         <label>{{v.child('tel').value}}</label>
         <label>
-          <input :class="{'valid': v.child('tel').isValid}" v-validate.tel="v">
+          <input :class="[{'valid': v.child('tel').isValid},{'wait': v.child('tel').onUpdate}]" v-validate.tel="v">
         </label>
       </div>
       <div>
-        <label>{{v.child('async').value}}</label>
+        <label>{{v.child('tel','async').value}}</label>
         <label>
-          <input :class="{'valid': v.child('async').isValid}" v-validate.async="v">
+          <input :class="[{'valid': v.child('tel','async').isValid}, { 'wait': v.child('tel','async').onUpdate}]" v-validate.tel.async="v">
         </label>
       </div>
       <button :disabled="!v.isValid" @click="submit" >Подтвердить</button>
@@ -108,15 +108,17 @@ export default {
         {
           name: 'tel',
           value: '12345678901',
-          functions: [tel],
+          functions: [tel, all],
+          children: [
+            {
+              name: 'async',
+              value: 'something',
+              functions: [{
+                f: (val) => resolveDelay(val==='async',1000),
+              }]
+            }
+          ]
         },
-        {
-          name: 'async',
-          value: 'something',
-          functions: [{
-            f: (val) => resolveDelay(val==='async',1000),
-          }]
-        }
       ],
     }),
   }),
