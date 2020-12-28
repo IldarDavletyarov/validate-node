@@ -54,7 +54,7 @@
       </g>
       </svg>
     </div>
-    <div :class="{'valid': v.isValid}">
+    <div :class="[{'valid': v.isValid }, { 'wait': v.onUpdate}]">
       <div>
         <label>
         {{v.child('email').value}}
@@ -67,8 +67,14 @@
           <input :class="{'valid': v.child('tel').isValid}" v-validate.tel="v">
         </label>
       </div>
+      <div>
+        <label>{{v.child('async').value}}</label>
+        <label>
+          <input :class="{'valid': v.child('async').isValid}" v-validate.async="v">
+        </label>
+      </div>
       <button :disabled="!v.isValid" @click="submit" >Подтвердить</button>
-  </div>
+    </div>
   </div>
 </template>
 
@@ -103,6 +109,13 @@ export default {
           name: 'tel',
           value: '12345678901',
           functions: [tel],
+        },
+        {
+          name: 'async',
+          value: 'something',
+          functions: [{
+            f: (val) => resolveDelay(val==='async',1000),
+          }]
         }
       ],
     }),
@@ -117,6 +130,11 @@ export default {
 <style scoped>
 .valid {
   border: 2px solid green;
+  border-radius: 4px;
+}
+.wait {
+  border: 3px solid darkorange;
+  border-radius: 6px;
 }
 h3 {
   margin: 40px 0 0;
