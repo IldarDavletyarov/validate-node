@@ -1,3 +1,5 @@
+// ERRORS show errors lazy functions
+
 const asyncEvery = async (arr: TValidateFunction[], predicate: (val:TValidateFunction) => Promise<boolean>) => {
 	for (let e of arr) {
 		if (!await predicate(e)) return false;
@@ -23,8 +25,8 @@ type TOptions = { // for events
 } | undefined;
 
 export interface IInput {
-	name: string;
-	value: any;
+	name: string | undefined;
+	value: any | undefined;
 	functions: TValidateFunction[] | undefined;
 	children: IInput[] | undefined;
 	isLazy: boolean | undefined;
@@ -41,7 +43,7 @@ export interface IValidateNode {
 	isValid: TOutput;
 	onUpdate: boolean;
 	handler: (input:any) => Promise<any> | void;
-	child: (name: string) => IValidateNode | undefined
+	child: (...args: string[] | string[][]) => IValidateNode | undefined
 }
 
 export default class ValidateNode implements IValidateNode {
@@ -72,8 +74,19 @@ export default class ValidateNode implements IValidateNode {
 		this.finishUpdate(); // await
 	}
 
-	public child(name: string): IValidateNode | undefined {
-		return this.children.find(c => c.name === name);
+	public async forceUpdate(): Promise<void> {
+		this.startUpdate();
+		await this.updateIsValid();
+		this.finishUpdate();
+	}
+
+	public child(...args: string[] | string[][]): IValidateNode | undefined {
+		let v: ValidateNode | undefined = this;
+		let children: string[] | string[][] = Array.isArray(args[0]) ? args[0] : args;
+		children.forEach(( _: string | string[]) => {
+			v = v?.children.find(c => c.name === _)
+		});
+		return v;
 	}
 
 	private async updateIsValid(): Promise<void> {
@@ -153,7 +166,7 @@ export default class ValidateNode implements IValidateNode {
 		value: any,
 		functions: TValidateFunction[],
 		children: ValidateNode[] = [],
-		isLazy: boolean = true,
+		isLazy: boolean = false,
 		options : TOptions = undefined,
 		subscribers: ValidateNode[] = []
 	) {
@@ -162,11 +175,11 @@ export default class ValidateNode implements IValidateNode {
 		this.value = value;
 		this.functions = functions;
 		this.children = children;
-		this.isValid = true;
+		this.isValid = false;
 		this.subscribers = subscribers;
 		this.options = options;
 		if (!isLazy) {
-			this.updateIsValid();
+			this.updateIsValid().then(r => {});
 		}
 	}
 }

@@ -1,6 +1,6 @@
 <template>
   <div class="hello">
-    <div v-if="validator.onUpdate">
+    <div v-if="v.onUpdate">
       PSEUDO ASYNC FUNCTION IS WORKING PLEASE WAIT
       <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin: auto; background-color: rgb(255, 255, 255); display: block; shape-rendering: auto; background-position: initial initial; background-repeat: initial initial;" width="50px" height="50px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
         <g transform="rotate(0 50 50)">
@@ -54,19 +54,20 @@
       </g>
       </svg>
     </div>
-    <div :class="{'valid': validator.isValid}">
-    <div>
-      <label>
-        {{validator.child('email').value}}
-        <input :class="{'valid': validator.child('email').isValid}" v-validate="validator.child('email')">
-      </label>
-    </div>
-    <div>
-      <label>{{validator.child('tel').value}}</label>
-      <label>
-        <input :class="{'valid': validator.child('tel').isValid}" v-validate="validator.child('tel')">
-      </label>
-    </div>
+    <div :class="{'valid': v.isValid}">
+      <div>
+        <label>
+        {{v.child('email').value}}
+          <input :class="{'valid': v.child('email').isValid}" v-validate:blur.email="v">
+        </label>
+      </div>
+      <div>
+        <label>{{v.child('tel').value}}</label>
+        <label>
+          <input :class="{'valid': v.child('tel').isValid}" v-validate.tel="v">
+        </label>
+      </div>
+      <button :disabled="!v.isValid" @click="submit" >Подтвердить</button>
   </div>
   </div>
 </template>
@@ -74,7 +75,7 @@
 <script lang="js">
 import { validate } from '@/validator/directive';
 import { create } from '@/validator/create';
-import { all, email, test } from '@/validator/functions';
+import { all, email, tel, equal } from '@/validator/functions';
 
 const resolveDelay = (x, delay) =>  {
   return new Promise(resolve => {
@@ -84,39 +85,35 @@ const resolveDelay = (x, delay) =>  {
   });
 };
 
-const allDelay = {
-  f: resolveDelay(all.f, 500)
-};
-
 export default {
   props: ['msg'],
   directives: {
     validate
   },
   data: () => ({
-    validator: create({
+    v: create({
       functions: [all],
       children: [
         {
           name: 'email',
-          value: 'email@,asd',
+          value: 'email@asd.com',
           functions: [email],
         },
         {
           name: 'tel',
-          value: 'tel',
-          functions: [test('telephone')],
+          value: '12345678901',
+          functions: [tel],
         }
       ],
     }),
   }),
   methods: {
-  
-  },
+    submit() {
+      console.log(this.v.child('email'),this.v.child('tel'));
+    }
+  }
 }
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .valid {
   border: 2px solid green;
