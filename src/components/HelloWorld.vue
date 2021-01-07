@@ -58,7 +58,7 @@
       <div>
         <label>
         {{v.child('email').value}}
-          <input :class="{'valid': v.child('email').isValid}" v-validate:blur.email.dfg.dfg="v">
+          <input :class="{'valid': v.child('email').isValid}" v-validate:blur.email="v">
         </label>
       </div>
       <div>
@@ -80,9 +80,7 @@
 </template>
 
 <script lang="js">
-import { validate } from '@/validator/directive';
-import { create } from '@/validator/create';
-import { all, email, tel, equal } from '@/validator/functions';
+import { validate, create, all, email, tel, equal } from '@/validator';
 
 const resolveDelay = (x, delay) =>  {
   return new Promise(resolve => {
@@ -115,7 +113,7 @@ export default {
               name: 'async',
               value: 'something',
               functions: [{
-                f: (val) => resolveDelay({ value: val==='async', errors: []},1000),
+                f: (val) => resolveDelay({ value: val==='ASYNC', errors: []},1000),
                 children: undefined
               }],
               options: {

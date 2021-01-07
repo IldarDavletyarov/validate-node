@@ -115,7 +115,6 @@ export default class ValidateNode implements IValidateNode {
 	public async handler(newValue: any, onLintUpdate: ((value: any) => any) | undefined = undefined): Promise<void> {
 
 		let value = newValue;
-		console.log(this.name,this.options);
 		this.options?.linters.forEach(l => {
 			value = l(value);
 		});
