@@ -1,14 +1,3 @@
-// ERRORS show errors lazy functions
-
-// класс функции содержит сам предикат, список от чего зависит предикат, isValid, список всех ошибок, список активных ошибок.
-
-const asyncEvery = async (arr: TValidateFunction[], predicate: (val:TValidateFunction) => Promise<boolean>) => {
-	for (let e of arr) {
-		if (!await predicate(e)) return false;
-	}
-	return true;
-};
-
 type TOutput = {
 	value: boolean,
 	errors: string[],
@@ -17,8 +6,8 @@ type TOutput = {
 export type TValidateFunction =
 	{
 		f: (value: any | undefined, children: IValidateNode[] | undefined) => TOutput,
-		children: string[] | undefined, // @ todo same children in f arg, need for lazy update
-	};// todo strings with errors
+		children: string[] | undefined,
+	};
 
 type TUpdateData = { childNames: string[] };
 
