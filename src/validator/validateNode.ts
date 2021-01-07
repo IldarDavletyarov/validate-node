@@ -1,5 +1,7 @@
 // ERRORS show errors lazy functions
 
+// класс функции содержит сам предикат, список от чего зависит предикат, isValid, список всех ошибок, список активных ошибок.
+
 const asyncEvery = async (arr: TValidateFunction[], predicate: (val:TValidateFunction) => Promise<boolean>) => {
 	for (let e of arr) {
 		if (!await predicate(e)) return false;
@@ -7,21 +9,26 @@ const asyncEvery = async (arr: TValidateFunction[], predicate: (val:TValidateFun
 	return true;
 };
 
-type TOutput = boolean;
+type TOutput = {
+	value: boolean,
+	errors: string[],
+};
 
 export type TValidateFunction =
 	{
 		f: (value: any | undefined, children: IValidateNode[] | undefined) => TOutput,
-		// children: string[], // @ todo same children in f arg, need for lazy update
+		children: string[] | undefined, // @ todo same children in f arg, need for lazy update
 	};// todo strings with errors
 
 type TUpdateData = { childNames: string[] };
 
-type TOptions = { // for events
-	onChildUpdate: (data: TUpdateData) => any,
-	onSelfUpdate: (data: IValidateNode) => any,
-	endChildUpdate: (data: TUpdateData) => any,
-	endSelfUpdate: (data: IValidateNode) => any,
+type TOptions = {
+	onChildUpdate: ((data: TUpdateData) => any),
+	onSelfUpdate: ((data: IValidateNode) => any),
+	endChildUpdate: ((data: TUpdateData) => any),
+	endSelfUpdate: ((data: IValidateNode) => any),
+	onlyFirstExceptions: boolean,
+	lazyUpdating: boolean,
 } | undefined;
 
 export interface IInput {
@@ -37,10 +44,12 @@ export interface IValidateNode {
 	name: string;
 	value: any;
 	functions: TValidateFunction[];
+	cacheFunctions: TOutput[];
 	children: IValidateNode[];
 	subscribers: IValidateNode[];
 	options: TOptions;
-	isValid: TOutput;
+	isValid: boolean;
+	errors: string[];
 	onUpdate: boolean;
 	handler: (input:any) => Promise<any> | void;
 	child: (...args: string[] | string[][]) => IValidateNode | undefined
@@ -51,13 +60,31 @@ export default class ValidateNode implements IValidateNode {
 
 	value: any; // todo generic T
 
-	functions: TValidateFunction[];
+	readonly functions: TValidateFunction[];
+
+	cacheFunctions: TOutput[] = [];
 
 	updateOnStack: TUpdateData[];
 
 	children: ValidateNode[];
 
-	isValid: TOutput;
+	public get isValid(): boolean {
+		for (let i = 0; i < this.cacheFunctions.length; i++) {
+			if (!this.cacheFunctions[i].value) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public get errors(): string[] {
+		for (let i = 0; i < this.cacheFunctions.length; i++) {
+			if (!this.cacheFunctions[i].value) {
+				return this.cacheFunctions[i].errors;
+			}
+		}
+		return [];
+	}
 
 	public get onUpdate(): boolean {
 		return this.updateOnStack.length !== 0;
@@ -70,13 +97,15 @@ export default class ValidateNode implements IValidateNode {
 	public async handler(newValue: any): Promise<void> {
 		this.value = newValue;
 		this.startUpdate();
-		await this.updateIsValid();
+		await this.updateCacheFunctions(undefined, true);
+		// await this.updateIsValid();
 		this.finishUpdate(); // await
 	}
 
 	public async forceUpdate(): Promise<void> {
 		this.startUpdate();
-		await this.updateIsValid();
+		await this.updateCacheFunctions(undefined,true);
+		// await this.updateIsValid();
 		this.finishUpdate();
 	}
 
@@ -89,19 +118,31 @@ export default class ValidateNode implements IValidateNode {
 		return v;
 	}
 
-	private async updateIsValid(): Promise<void> {
-		this.isValid = await asyncEvery(this.functions, async({ f }) => {
-			return await f(this.value, this.children);
-		});
+	// private async updateIsValid(): Promise<void> {
+	// 	this.isValid = await asyncEvery(this.functions, async({ f }) => {
+	// 		return await f(this.value, this.children);
+	// 	});
+	// }
+
+	private async initCacheFunctions(): Promise<void> {
+		for (let i = 0; i < this.functions.length; i++) {
+			this.cacheFunctions.push( await this.functions[i].f(this.value,this.children));
+		}
+	}
+	private async updateCacheFunctions(childName: string | undefined = undefined, isForce: boolean = false): Promise<void> {
+		for (let i = 0; i < this.functions.length; i++) {
+			if (!isForce && (Array.isArray(this.functions[i].children)) && (!childName || !this.functions[i].children?.includes(childName))) { // lazy factor
+				continue;
+			}
+			this.cacheFunctions[i] = await this.functions[i].f(this.value, this.children);
+		}
 	}
 
 	// private async updateIsValidLazy(childName: string | undefined): Promise<void> {
 	// 	if (!childName) {
 	// 		this.updateIsValid();
 	// 	} else {
-	// 		this.isValid =
-	// 			// this.isValid &&
-	// 			await asyncEvery(this.functions.filter(f => f.children.includes(childName)), async ({ f }) => {
+	// 		this.isValid = await asyncEvery(this.functions.filter(f => !f.children.includes(childName)), async ({ f }) => {
 	// 			return await f(this.value, this.children);
 	// 		});
 	// 	}
@@ -131,7 +172,8 @@ export default class ValidateNode implements IValidateNode {
 		this.options?.endChildUpdate(data);
 		// lazy is not work
 		// await this.updateIsValidLazy(data.childNames.pop());
-		await this.updateIsValid();
+		await this.updateCacheFunctions(data.childNames.pop());
+		// await this.updateIsValid();
 		// this.onUpdate = false;
 		this.updateOnStack.pop();
 		this.sendParentEndUpdate({ childNames:[...data.childNames, this.name] }, deep + 1); // probable problem with order
@@ -175,11 +217,13 @@ export default class ValidateNode implements IValidateNode {
 		this.value = value;
 		this.functions = functions;
 		this.children = children;
-		this.isValid = false;
+		this.initCacheFunctions().then();
+		// this.isValid = false;
 		this.subscribers = subscribers;
 		this.options = options;
 		if (!isLazy) {
-			this.updateIsValid().then(r => {});
+			this.updateCacheFunctions().then();
+			// this.updateIsValid().then(r => {});
 		}
 	}
 }

@@ -13,7 +13,7 @@ export const validate = {
     el.value = v?.value;
     handler = async (e: any) => {
       await v?.handler(e.target.value)
-    }
+    };
     eventType = binding.arg || 'input';
     el.addEventListener(eventType, handler);
   },

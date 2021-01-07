@@ -63,6 +63,7 @@
       </div>
       <div>
         <label>{{v.child('tel').value}}</label>
+        <label>{{v.child('tel').errors}}</label>
         <label>
           <input :class="[{'valid': v.child('tel').isValid},{'wait': v.child('tel').onUpdate}]" v-validate.tel="v">
         </label>
@@ -114,7 +115,8 @@ export default {
               name: 'async',
               value: 'something',
               functions: [{
-                f: (val) => resolveDelay(val==='async',1000),
+                f: (val) => resolveDelay({ value: val==='async', errors: []},1000),
+                children: undefined
               }]
             }
           ]
