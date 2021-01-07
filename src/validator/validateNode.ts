@@ -47,7 +47,7 @@ export interface IValidateNode {
 export default class ValidateNode implements IValidateNode {
 	name: string;
 
-	value: any; // todo generic T
+	value: any;
 
 	readonly functions: TValidateFunction[];
 
