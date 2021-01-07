@@ -9,6 +9,8 @@ export type TValidateFunction =
 		children: string[] | undefined,
 	};
 
+export type TLinterFunction = (value: any) => any
+
 type TUpdateData = { childNames: string[] };
 
 type TOptions = {
@@ -16,9 +18,32 @@ type TOptions = {
 	onSelfUpdate: ((data: IValidateNode) => any),
 	endChildUpdate: ((data: TUpdateData) => any),
 	endSelfUpdate: ((data: IValidateNode) => any),
-	onlyFirstExceptions: boolean,
-	lazyUpdating: boolean,
-} | undefined;
+	allErrors: boolean,
+	linters: TLinterFunction[],
+	onLintUpdate: (value: any) => any,
+};
+
+const initialOptions: TOptions = {
+	onChildUpdate: () => {},
+	onSelfUpdate: () => {},
+	endChildUpdate: () => {},
+	endSelfUpdate: () => {},
+	allErrors: false,
+	linters: [],
+	onLintUpdate: () => {},
+};
+
+export const mergeOptions = (options: TOptions | undefined): TOptions => {
+	let result: TOptions = {...initialOptions};
+	if (!options) {
+		return result;
+	}
+	for(const key in options) {
+		// @ts-ignore
+		result[key] = options[key];
+	}
+	return result;
+}
 
 export interface IInput {
 	name: string | undefined;
@@ -26,7 +51,7 @@ export interface IInput {
 	functions: TValidateFunction[] | undefined;
 	children: IInput[] | undefined;
 	isLazy: boolean | undefined;
-	options: TOptions | undefined;
+	options: TOptions;
 }
 
 export interface IValidateNode {
@@ -40,7 +65,7 @@ export interface IValidateNode {
 	isValid: boolean;
 	errors: string[];
 	onUpdate: boolean;
-	handler: (input:any) => Promise<any> | void;
+	handler: (input:any, onLintUpdate: ((value: any) => any) | undefined) => Promise<any> | void;
 	child: (...args: string[] | string[][]) => IValidateNode | undefined
 }
 
@@ -67,12 +92,16 @@ export default class ValidateNode implements IValidateNode {
 	}
 
 	public get errors(): string[] {
+		let errors: string[] = [];
 		for (let i = 0; i < this.cacheFunctions.length; i++) {
 			if (!this.cacheFunctions[i].value) {
-				return this.cacheFunctions[i].errors;
+				errors = errors.concat(this.cacheFunctions[i].errors);
+				if (!this.options?.allErrors) {
+					break;
+				}
 			}
 		}
-		return [];
+		return errors;
 	}
 
 	public get onUpdate(): boolean {
@@ -83,8 +112,19 @@ export default class ValidateNode implements IValidateNode {
 
 	options: TOptions;
 
-	public async handler(newValue: any): Promise<void> {
-		this.value = newValue;
+	public async handler(newValue: any, onLintUpdate: ((value: any) => any) | undefined = undefined): Promise<void> {
+
+		let value = newValue;
+		console.log(this.name,this.options);
+		this.options?.linters.forEach(l => {
+			value = l(value);
+		});
+		if (value !== newValue && onLintUpdate) { // lint detected
+			onLintUpdate(value);
+		}
+
+		this.value = value;
+
 		this.startUpdate();
 		await this.updateCacheFunctions(undefined, true);
 		this.finishUpdate(); // await
@@ -140,7 +180,7 @@ export default class ValidateNode implements IValidateNode {
 		this.options?.endChildUpdate(data);
 		await this.updateCacheFunctions(data.childNames.pop());
 		this.updateOnStack.pop();
-		this.sendParentEndUpdate({ childNames:[...data.childNames, this.name] }, deep + 1); // probable problem with order
+		this.sendParentEndUpdate({ childNames:[...data.childNames, this.name] }, deep + 1);
 	}
 
 	private sendParentOnUpdate(data: TUpdateData, deep: number): void {
@@ -163,11 +203,11 @@ export default class ValidateNode implements IValidateNode {
 
 	constructor(
 		name: string,
-		value: any,
-		functions: TValidateFunction[],
+		value: any = '',
+		functions: TValidateFunction[] = [],
 		children: ValidateNode[] = [],
 		isLazy: boolean = false,
-		options : TOptions = undefined,
+		options : TOptions | undefined = undefined,
 		subscribers: ValidateNode[] = []
 	) {
 		this.updateOnStack = [];
@@ -177,7 +217,7 @@ export default class ValidateNode implements IValidateNode {
 		this.children = children;
 		this.initCacheFunctions().then();
 		this.subscribers = subscribers;
-		this.options = options;
+		this.options = mergeOptions(options);
 		if (!isLazy) {
 			this.updateCacheFunctions().then();
 		}

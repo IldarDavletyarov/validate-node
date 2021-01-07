@@ -1,4 +1,4 @@
-import { IValidateNode, IInput } from './validateNode';
+import { IInput, mergeOptions } from './validateNode';
 import ValidateNode from './validateNode';
 
 let pid = 0;
@@ -11,7 +11,7 @@ export const create = (input: IInput) : ValidateNode => {
 		input.functions || [],
 		children,
 		input.isLazy,
-		input.options);
+		mergeOptions(input?.options));
 
 	children?.forEach(c => { // add parent
 		c.subscribers.push(vn);
@@ -22,4 +22,4 @@ export const create = (input: IInput) : ValidateNode => {
 	});
 
 	return vn;
-}
+};

@@ -2,7 +2,7 @@
   <div class="hello">
     <div v-if="v.onUpdate">
       PSEUDO ASYNC FUNCTION IS WORKING PLEASE WAIT
-      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin: auto; background-color: rgb(255, 255, 255); display: block; shape-rendering: auto; background-position: initial initial; background-repeat: initial initial;" width="50px" height="50px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
+      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" style="margin: auto; background-color: rgb(255, 255, 255); display: block; shape-rendering: auto; background-position: initial; background-repeat: initial;" width="50px" height="50px" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid">
         <g transform="rotate(0 50 50)">
           <rect x="47" y="24" rx="3" ry="6" width="6" height="12" fill="#fe718d">
             <animate attributeName="opacity" values="1;0" keyTimes="0;1" dur="1s" begin="-0.9166666666666666s" repeatCount="indefinite"></animate>
@@ -58,7 +58,7 @@
       <div>
         <label>
         {{v.child('email').value}}
-          <input :class="{'valid': v.child('email').isValid}" v-validate:blur.email="v">
+          <input :class="{'valid': v.child('email').isValid}" v-validate:blur.email.dfg.dfg="v">
         </label>
       </div>
       <div>
@@ -117,7 +117,14 @@ export default {
               functions: [{
                 f: (val) => resolveDelay({ value: val==='async', errors: []},1000),
                 children: undefined
-              }]
+              }],
+              options: {
+                linters: [
+                  (v) => {
+                    return v.toUpperCase();
+                  },
+                ]
+              },
             }
           ]
         },
