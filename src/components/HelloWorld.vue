@@ -80,7 +80,7 @@
 </template>
 
 <script lang="js">
-import { validate, create, all, email, tel, equal } from '@/validator';
+import { validate, create, all, email, equal } from '@/validate-node';
 
 const resolveDelay = (x, delay) =>  {
   return new Promise(resolve => {

@@ -3,8 +3,7 @@ type TOutput = {
 	errors: string[],
 };
 
-export type TValidateFunction =
-	{
+export type TValidateFunction = {
 		f: (value: any | undefined, children: IValidateNode[] | undefined) => TOutput,
 		children: string[] | undefined,
 	};
@@ -28,7 +27,7 @@ const initialOptions: TOptions = {
 	onSelfUpdate: () => {},
 	endChildUpdate: () => {},
 	endSelfUpdate: () => {},
-	allErrors: false,
+	allErrors: true,
 	linters: [],
 	onLintUpdate: () => {},
 };
@@ -39,8 +38,7 @@ export const mergeOptions = (options: TOptions | undefined): TOptions => {
 		return result;
 	}
 	for(const key in options) {
-		// @ts-ignore
-		result[key] = options[key];
+		(result as {[index: string]:any})[key] = (options as {[index: string]:any})[key];
 	}
 	return result;
 }
@@ -65,7 +63,7 @@ export interface IValidateNode {
 	isValid: boolean;
 	errors: string[];
 	onUpdate: boolean;
-	handler: (input:any, onLintUpdate: ((value: any) => any) | undefined) => Promise<any> | void;
+	handler: (input:any, onLintUpdate: ((value: any) => any) | undefined) => Promise<void>;
 	child: (...args: string[] | string[][]) => IValidateNode | undefined
 }
 
@@ -96,7 +94,7 @@ export default class ValidateNode implements IValidateNode {
 		for (let i = 0; i < this.cacheFunctions.length; i++) {
 			if (!this.cacheFunctions[i].value) {
 				errors = errors.concat(this.cacheFunctions[i].errors);
-				if (!this.options?.allErrors) {
+				if (!this.options.allErrors) {
 					break;
 				}
 			}

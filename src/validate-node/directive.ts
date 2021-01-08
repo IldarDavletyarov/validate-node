@@ -1,6 +1,6 @@
-import { IValidateNode } from './validateNode'
+import { IValidateNode } from './validateNode';
 
-let handler: (e: Event) => void;
+let handler: (e: Event) => Promise<void>;
 let eventType: string;
 
 export const validate = {
@@ -9,15 +9,18 @@ export const validate = {
       console.error(`v-validate: pass validate-node for the element:`,el);
       return;
     }
-    let v: IValidateNode | undefined = binding.value.child(Object.keys(binding.modifiers));
+
+    const children = Object.keys(binding.modifiers);
+
+    let v: IValidateNode | undefined = binding.value.child(children);
 
     if (!v) {
-      console.error(`v-validate: passed child (path: ${Object.keys(binding.modifiers)}) is undefined:`,el);
+      console.error(`v-validate: passed child (path: ${children}) is undefined:`,el);
       return;
     }
 
     el.value = v?.value;
-    handler = async (e: Event) => {
+    handler = async (e: Event): Promise<void> => {
       await v?.handler(el.value, (value) => {el.value = value;});
     };
     eventType = binding.arg || 'input';
