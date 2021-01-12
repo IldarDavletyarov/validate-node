@@ -57,21 +57,21 @@
     <div :class="[{'valid': v.isValid }, { 'wait': v.onUpdate}]">
       <div>
         <label>
-        {{v.child('email').value}}
-          <input :class="{'valid': v.child('email').isValid}" v-validate:blur.email="v">
+        {{v.email.value}}
+          <input :class="{'valid': v.email.isValid}" v-validate:blur.email="v">
         </label>
       </div>
       <div>
-        <label>{{v.child('tel').value}}</label>
-        <label>{{v.child('tel').errors}}</label>
+        <label>{{v.tel.value}}</label>
+        <label>{{v.tel.errors}}</label>
         <label>
-          <input :class="[{'valid': v.child('tel').isValid},{'wait': v.child('tel').onUpdate}]" v-validate.tel="v">
+          <input :class="[{'valid': v.child('tel').isValid},{'wait': v.tel.onUpdate}]" v-validate.tel="v">
         </label>
       </div>
       <div>
-        <label>{{v.child('tel','async').value}}</label>
+        <label>{{v.tel.async.value}}</label>
         <label>
-          <input :class="[{'valid': v.child('tel','async').isValid}, { 'wait': v.child('tel','async').onUpdate}]" v-validate.tel.async="v">
+          <input :class="[{'valid': v.tel.async.isValid}, { 'wait': v.tel.async.onUpdate}]" v-validate.tel.async="v">
         </label>
       </div>
       <button :disabled="!v.isValid" @click="submit" >Подтвердить</button>
@@ -79,12 +79,13 @@
   </div>
 </template>
 
-<script lang="js">
-import { validate, create, all, email, equal } from '@/validate-node';
+<script lang="ts">
+import { validate, create, all, email, tel } from '@/validate-node';
 
-const resolveDelay = (x, delay) =>  {
+const resolveDelay = (x: any, delay: number) =>  {
   return new Promise(resolve => {
     setTimeout(() => {
+      console.log('execute promise');
       resolve(x);
     }, delay);
   });
@@ -101,7 +102,7 @@ export default {
       children: [
         {
           name: 'email',
-          value: 'email@asd.com',
+          value: 'email@someg.c',
           functions: [email],
         },
         {
@@ -113,12 +114,12 @@ export default {
               name: 'async',
               value: 'something',
               functions: [{
-                f: (val) => resolveDelay({ value: val==='ASYNC', errors: []},1000),
-                children: undefined
+                f: (val: string) => resolveDelay({value: val==='ASYNC', errors: []},1000),
+                children: []
               }],
               options: {
                 linters: [
-                  (v) => {
+                  (v: string) => {
                     return v.toUpperCase();
                   },
                 ]
@@ -127,11 +128,14 @@ export default {
           ]
         },
       ],
-    }),
+    },
+       true
+    ),
   }),
   methods: {
     submit() {
-      console.log(this.v.child('email'),this.v.child('tel'));
+      // @ts-ignore
+      console.log(this.v.email,this.v.tel);
     }
   }
 }
