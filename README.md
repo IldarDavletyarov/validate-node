@@ -1,19 +1,13 @@
-# untitled
-
-## Project setup
-```
-npm install
-```
-
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
-
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
+# System for complex component validation in Vue.js.
+#### The repository shows examples of using the validator
+## Features:
+- Support for complex hierarchical validation systems
+- Support for asynchronous validation handlers
+- lazy data update
+- ts-friendly
+- existence of Vue directives (works only for input)
+## Not done:
+- directive support for all kinds of HTMLELements (textarea, checkbox, select etc)
+- ts-types are missing in places
+- tests
+- package publication
