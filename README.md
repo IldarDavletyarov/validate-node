@@ -1,4 +1,4 @@
-# System for complex component validation in Vue.js.
+# System for complex component validation in Vue.js
 #### The repository shows examples of using the validator
 ## Features:
 - Support for complex hierarchical validation systems
